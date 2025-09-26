@@ -220,23 +220,6 @@ p1UploadInput.addEventListener('change', async (e) => {
             return null;
         }
     };
-
-    const imageUrl = await uploadToCloudinary(file);
-
-    if (imageUrl) {
-        await db.collection('sessions').doc(currentSessionId).update({
-            [`players.${currentPlayerId}.imageUrl`]: imageUrl,
-            [`players.${currentPlayerId}.uploaded`]: true
-        });
-
-        p1Preview.src = imageUrl;
-        p1Preview.style.display = 'block';
-        p1Status.textContent = 'Uploaded! Press Done when ready..';
-        p1ReadyBtn.disabled = false;
-    } else {
-        p1Status.textContent = 'Upload failed!';
-        p1UploadLabel.style.display = 'block';
-    }
 });
 
     const imageUrl = await uploadToCloudinary(file);
