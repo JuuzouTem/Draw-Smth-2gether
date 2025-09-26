@@ -1,8 +1,6 @@
-// Firebase'i başlat (config.js'den gelen firebaseConfig ile)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// --- DOM Elementleri ---
 const screens = document.querySelectorAll('.screen');
 const setupScreen = document.getElementById('setup-screen');
 const waitingScreen = document.getElementById('waiting-screen');
@@ -18,33 +16,27 @@ const copyLinkBtn = document.getElementById('copy-link-btn');
 const gameTheme = document.getElementById('game-theme');
 const timerDisplay = document.getElementById('timer');
 
-// Oyuncu 1 (Kullanıcı)
 const p1UploadInput = document.getElementById('p1-upload-input');
 const p1Preview = document.getElementById('p1-preview');
 const p1UploadLabel = document.querySelector('label[for="p1-upload-input"]');
 const p1ReadyBtn = document.getElementById('p1-ready-btn');
 const p1Status = document.getElementById('p1-status');
 
-// Oyuncu 2 (Arkadaş)
 const p2Preview = document.getElementById('p2-preview');
 const p2Placeholder = document.getElementById('p2-placeholder');
 const p2Status = document.getElementById('p2-status');
 
-// Sonuç Ekranı
 const resultTheme = document.getElementById('result-theme');
 const resultImg1 = document.getElementById('result-img1');
 const resultImg2 = document.getElementById('result-img2');
 const newGameBtn = document.getElementById('new-game-btn');
 
-// --- Global Değişkenler ---
 let currentSessionId = null;
 let currentPlayerId = null;
-let unsubscribe; // Firestore dinleyicisini tutar
-let timerInterval; // Zamanlayıcıyı tutar
+let unsubscribe;
+let timerInterval;
 
-// --- Fonksiyonlar ---
 
-// Belirtilen ID'ye sahip ekranı gösterir
 function showScreen(screenId) {
     screens.forEach(screen => {
         screen.classList.remove('active');
@@ -52,7 +44,6 @@ function showScreen(screenId) {
     document.getElementById(screenId).classList.add('active');
 }
 
-// Saniyeyi "dakika:saniye" formatına çevirir
 function formatTime(seconds) {
     if (seconds === 0) return "Unlimited";
     const mins = Math.floor(seconds / 60);
@@ -60,7 +51,6 @@ function formatTime(seconds) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Yeni bir oyun odası oluşturur
 async function createNewSession() {
     const theme = themeInput.value.trim();
     const duration = parseInt(timeSelect.value);
@@ -99,7 +89,6 @@ async function createNewSession() {
     }
 }
 
-// Paylaşım linkini kopyalar
 function copyShareLink() {
     shareLinkInput.select();
     document.execCommand('copy');
@@ -107,7 +96,6 @@ function copyShareLink() {
     setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
 }
 
-// Firestore'daki oda verisini gerçek zamanlı dinler
 function listenToSession() {
     if (unsubscribe) unsubscribe();
 
@@ -136,7 +124,6 @@ function listenToSession() {
         });
 }
 
-// Gelen veriye göre arayüzü günceller
 function updateUI(data) {
     gameTheme.textContent = `Theme: ${data.theme}`;
     resultTheme.textContent = `Theme: ${data.theme}`;
@@ -162,7 +149,6 @@ function updateUI(data) {
     }
 }
 
-// Zamanlayıcıyı başlatır
 function startTimer(duration, startTime) {
     if (duration === 0) {
         timerDisplay.textContent = 'Time: Unlimited';
@@ -186,11 +172,9 @@ function startTimer(duration, startTime) {
     }, 1000);
 }
 
-// Oyunu bitirir ve durumu "finished" olarak günceller
 function finishGame() {
     if (unsubscribe) unsubscribe();
     clearInterval(timerInterval);
-    // Durumun zaten "finished" olup olmadığını kontrol edip gereksiz yazmayı önleyebiliriz.
     db.collection('sessions').doc(currentSessionId).get().then(doc => {
         if (doc.exists && doc.data().status !== 'finished') {
             db.collection('sessions').doc(currentSessionId).update({ status: 'finished' });
@@ -198,34 +182,26 @@ function finishGame() {
     });
 }
 
-// Sonuçları gösterir
 function showResults(data) {
     showScreen('results-screen');
 
     let myImageUrl;
     let friendImageUrl;
 
-    // 1. Adım: Kimin resminin hangisi olduğunu belirle
-    // Eğer ben Oyuncu 1 isem:
     if (currentPlayerId === 'p1') {
         myImageUrl = data.players.p1.imageUrl;
         friendImageUrl = data.players.p2.imageUrl;
     } 
-    // Eğer ben Oyuncu 2 isem:
     else {
         myImageUrl = data.players.p2.imageUrl;
         friendImageUrl = data.players.p1.imageUrl;
     }
 
-    // 2. Adım: Belirlenen resimleri doğru yerlere yerleştir
-    // "Your Drawing" kutusuna (soldaki) benim resmimi koy
     resultImg1.src = myImageUrl || 'https://via.placeholder.com/350?text=No+Image';
     
-    // "Your Friend's Drawing" kutusuna (sağdaki) arkadaşımın resmini koy
     resultImg2.src = friendImageUrl || 'https://via.placeholder.com/350?text=No+Image';
 }
 
-// Dosya seçildiğinde çalışır ve Cloudinary'ye yükler
 async function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -270,7 +246,6 @@ async function handleFileUpload(e) {
     }
 }
 
-// "Bitti" butonuna basıldığında oyuncuyu hazır olarak işaretler
 function setPlayerReady() {
     db.collection('sessions').doc(currentSessionId).update({
         [`players.${currentPlayerId}.ready`]: true
@@ -280,17 +255,15 @@ function setPlayerReady() {
     p1Status.textContent = "You're ready!";
 }
 
-// "Yeni Oyun" butonuna basıldığında sayfayı yeniler
 function startNewGame() {
     window.location.href = window.location.origin + window.location.pathname;
 }
 
-// Sayfa ilk yüklendiğinde çalışır
 function handlePageLoad() {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session');
 
-    if (sessionId) { // Eğer URL'de bir oda ID'si varsa, odaya katıl
+    if (sessionId) {
         db.collection('sessions').doc(sessionId).get().then(doc => {
             if (doc.exists) {
                 currentSessionId = sessionId;
@@ -302,12 +275,11 @@ function handlePageLoad() {
                 showScreen('setup-screen');
             }
         });
-    } else { // Yoksa, yeni oda oluşturma ekranını göster
+    } else {
         showScreen('setup-screen');
     }
 }
 
-// --- Event Listeners (Olay Dinleyicileri) ---
 createSessionBtn.addEventListener('click', createNewSession);
 copyLinkBtn.addEventListener('click', copyShareLink);
 p1UploadInput.addEventListener('change', handleFileUpload);
