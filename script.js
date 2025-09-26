@@ -201,18 +201,28 @@ function finishGame() {
 // Sonuçları gösterir
 function showResults(data) {
     showScreen('results-screen');
-    const p1ImageUrl = data.players.p1.imageUrl;
-    const p2ImageUrl = data.players.p2.imageUrl;
 
-    // Arayüzde kimin çiziminin nerede görüneceğini ayarlar
-    // "Senin Çizimin" her zaman solda gösterilir
+    let myImageUrl;
+    let friendImageUrl;
+
+    // 1. Adım: Kimin resminin hangisi olduğunu belirle
+    // Eğer ben Oyuncu 1 isem:
     if (currentPlayerId === 'p1') {
-        resultImg1.src = p1ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
-        resultImg2.src = p2ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
-    } else { // Eğer siz Oyuncu 2 iseniz
-        resultImg1.src = p2ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
-        resultImg2.src = p1ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
+        myImageUrl = data.players.p1.imageUrl;
+        friendImageUrl = data.players.p2.imageUrl;
+    } 
+    // Eğer ben Oyuncu 2 isem:
+    else {
+        myImageUrl = data.players.p2.imageUrl;
+        friendImageUrl = data.players.p1.imageUrl;
     }
+
+    // 2. Adım: Belirlenen resimleri doğru yerlere yerleştir
+    // "Your Drawing" kutusuna (soldaki) benim resmimi koy
+    resultImg1.src = myImageUrl || 'https://via.placeholder.com/350?text=No+Image';
+    
+    // "Your Friend's Drawing" kutusuna (sağdaki) arkadaşımın resmini koy
+    resultImg2.src = friendImageUrl || 'https://via.placeholder.com/350?text=No+Image';
 }
 
 // Dosya seçildiğinde çalışır ve Cloudinary'ye yükler
