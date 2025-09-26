@@ -39,11 +39,12 @@ const newGameBtn = document.getElementById('new-game-btn');
 // --- Global Değişkenler ---
 let currentSessionId = null;
 let currentPlayerId = null;
-let unsubscribe;
-let timerInterval;
+let unsubscribe; // Firestore dinleyicisini tutar
+let timerInterval; // Zamanlayıcıyı tutar
 
 // --- Fonksiyonlar ---
 
+// Belirtilen ID'ye sahip ekranı gösterir
 function showScreen(screenId) {
     screens.forEach(screen => {
         screen.classList.remove('active');
@@ -51,6 +52,7 @@ function showScreen(screenId) {
     document.getElementById(screenId).classList.add('active');
 }
 
+// Saniyeyi "dakika:saniye" formatına çevirir
 function formatTime(seconds) {
     if (seconds === 0) return "Unlimited";
     const mins = Math.floor(seconds / 60);
@@ -58,6 +60,7 @@ function formatTime(seconds) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+// Yeni bir oyun odası oluşturur
 async function createNewSession() {
     const theme = themeInput.value.trim();
     const duration = parseInt(timeSelect.value);
@@ -72,7 +75,7 @@ async function createNewSession() {
             theme: theme,
             duration: duration,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'waiting',
+            status: 'waiting', // Durumlar: waiting, in-progress, finished
             players: {
                 p1: { uploaded: false, ready: false, imageUrl: '' },
                 p2: { uploaded: false, ready: false, imageUrl: '' }
@@ -96,6 +99,7 @@ async function createNewSession() {
     }
 }
 
+// Paylaşım linkini kopyalar
 function copyShareLink() {
     shareLinkInput.select();
     document.execCommand('copy');
@@ -103,6 +107,7 @@ function copyShareLink() {
     setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
 }
 
+// Firestore'daki oda verisini gerçek zamanlı dinler
 function listenToSession() {
     if (unsubscribe) unsubscribe();
 
@@ -115,6 +120,7 @@ function listenToSession() {
             }
 
             const sessionData = doc.data();
+            
             updateUI(sessionData);
 
             const p1Ready = sessionData.players.p1.ready;
@@ -130,6 +136,7 @@ function listenToSession() {
         });
 }
 
+// Gelen veriye göre arayüzü günceller
 function updateUI(data) {
     gameTheme.textContent = `Theme: ${data.theme}`;
     resultTheme.textContent = `Theme: ${data.theme}`;
@@ -140,7 +147,9 @@ function updateUI(data) {
     
     if (data.status === 'in-progress' && !gameScreen.classList.contains('active')) {
         showScreen('game-screen');
-        startTimer(data.duration, data.createdAt);
+        if (data.createdAt) { // createdAt verisi geldiyse zamanlayıcıyı başlat
+            startTimer(data.duration, data.createdAt);
+        }
     }
     
     const friendId = currentPlayerId === 'p1' ? 'p2' : 'p1';
@@ -153,15 +162,14 @@ function updateUI(data) {
     }
 }
 
+// Zamanlayıcıyı başlatır
 function startTimer(duration, startTime) {
     if (duration === 0) {
         timerDisplay.textContent = 'Time: Unlimited';
         return;
     }
-
     if (timerInterval) clearInterval(timerInterval);
 
-    // startTime Firestore'dan bir nesne olarak gelir, onu Date nesnesine çevirmeliyiz
     const endTime = startTime.toDate().getTime() + duration * 1000;
 
     timerInterval = setInterval(() => {
@@ -178,21 +186,36 @@ function startTimer(duration, startTime) {
     }, 1000);
 }
 
+// Oyunu bitirir ve durumu "finished" olarak günceller
 function finishGame() {
     if (unsubscribe) unsubscribe();
     clearInterval(timerInterval);
-    db.collection('sessions').doc(currentSessionId).update({ status: 'finished' });
+    // Durumun zaten "finished" olup olmadığını kontrol edip gereksiz yazmayı önleyebiliriz.
+    db.collection('sessions').doc(currentSessionId).get().then(doc => {
+        if (doc.exists && doc.data().status !== 'finished') {
+            db.collection('sessions').doc(currentSessionId).update({ status: 'finished' });
+        }
+    });
 }
 
+// Sonuçları gösterir
 function showResults(data) {
     showScreen('results-screen');
-    const player1 = currentPlayerId;
-    const player2 = (currentPlayerId === 'p1' ? 'p2' : 'p1');
+    const p1ImageUrl = data.players.p1.imageUrl;
+    const p2ImageUrl = data.players.p2.imageUrl;
 
-    resultImg1.src = data.players[player1].imageUrl || 'https://via.placeholder.com/350?text=No+Image';
-    resultImg2.src = data.players[player2].imageUrl || 'https://via.placeholder.com/350?text=No+Image';
+    // Arayüzde kimin çiziminin nerede görüneceğini ayarlar
+    // "Senin Çizimin" her zaman solda gösterilir
+    if (currentPlayerId === 'p1') {
+        resultImg1.src = p1ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
+        resultImg2.src = p2ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
+    } else { // Eğer siz Oyuncu 2 iseniz
+        resultImg1.src = p2ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
+        resultImg2.src = p1ImageUrl || 'https://via.placeholder.com/350?text=No+Image';
+    }
 }
 
+// Dosya seçildiğinde çalışır ve Cloudinary'ye yükler
 async function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -200,22 +223,17 @@ async function handleFileUpload(e) {
     p1Status.textContent = 'Loading...';
     p1UploadLabel.style.display = 'none';
 
-    // Resim yükleme fonksiyonu (uploadToCloudinary) burada tanımlanıyor
     const uploadToCloudinary = async (fileToUpload) => {
         const CLOUD_NAME = "dpxmx5bsx";
         const UPLOAD_PRESET = "drawst";
         const URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
-
         const formData = new FormData();
         formData.append('file', fileToUpload);
         formData.append('upload_preset', UPLOAD_PRESET);
         
         try {
-            const response = await fetch(URL, {
-                method: 'POST',
-                body: formData,
-            });
-            if (!response.ok) throw new Error('The upload failed.');
+            const response = await fetch(URL, { method: 'POST', body: formData });
+            if (!response.ok) throw new Error('Upload failed.');
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
@@ -224,7 +242,6 @@ async function handleFileUpload(e) {
         }
     };
 
-    // Tanımlanan fonksiyon hemen altında burada çağrılıyor
     const imageUrl = await uploadToCloudinary(file);
 
     if (imageUrl) {
@@ -243,6 +260,7 @@ async function handleFileUpload(e) {
     }
 }
 
+// "Bitti" butonuna basıldığında oyuncuyu hazır olarak işaretler
 function setPlayerReady() {
     db.collection('sessions').doc(currentSessionId).update({
         [`players.${currentPlayerId}.ready`]: true
@@ -252,15 +270,17 @@ function setPlayerReady() {
     p1Status.textContent = "You're ready!";
 }
 
+// "Yeni Oyun" butonuna basıldığında sayfayı yeniler
 function startNewGame() {
     window.location.href = window.location.origin + window.location.pathname;
 }
 
+// Sayfa ilk yüklendiğinde çalışır
 function handlePageLoad() {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session');
 
-    if (sessionId) {
+    if (sessionId) { // Eğer URL'de bir oda ID'si varsa, odaya katıl
         db.collection('sessions').doc(sessionId).get().then(doc => {
             if (doc.exists) {
                 currentSessionId = sessionId;
@@ -268,15 +288,16 @@ function handlePageLoad() {
                 listenToSession();
             } else {
                 alert("Invalid room link!");
+                history.replaceState(null, '', window.location.pathname);
                 showScreen('setup-screen');
             }
         });
-    } else {
+    } else { // Yoksa, yeni oda oluşturma ekranını göster
         showScreen('setup-screen');
     }
 }
 
-// --- Event Listeners ---
+// --- Event Listeners (Olay Dinleyicileri) ---
 createSessionBtn.addEventListener('click', createNewSession);
 copyLinkBtn.addEventListener('click', copyShareLink);
 p1UploadInput.addEventListener('change', handleFileUpload);
