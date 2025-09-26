@@ -1,6 +1,8 @@
+// Firebase'i başlat (config.js'den gelen firebaseConfig ile)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// --- DOM Elementleri ---
 const screens = document.querySelectorAll('.screen');
 const setupScreen = document.getElementById('setup-screen');
 const waitingScreen = document.getElementById('waiting-screen');
@@ -16,26 +18,31 @@ const copyLinkBtn = document.getElementById('copy-link-btn');
 const gameTheme = document.getElementById('game-theme');
 const timerDisplay = document.getElementById('timer');
 
+// Oyuncu 1 (Kullanıcı)
 const p1UploadInput = document.getElementById('p1-upload-input');
 const p1Preview = document.getElementById('p1-preview');
 const p1UploadLabel = document.querySelector('label[for="p1-upload-input"]');
 const p1ReadyBtn = document.getElementById('p1-ready-btn');
 const p1Status = document.getElementById('p1-status');
 
+// Oyuncu 2 (Arkadaş)
 const p2Preview = document.getElementById('p2-preview');
 const p2Placeholder = document.getElementById('p2-placeholder');
 const p2Status = document.getElementById('p2-status');
 
+// Sonuç Ekranı
 const resultTheme = document.getElementById('result-theme');
 const resultImg1 = document.getElementById('result-img1');
 const resultImg2 = document.getElementById('result-img2');
 const newGameBtn = document.getElementById('new-game-btn');
 
+// --- Global Değişkenler ---
 let currentSessionId = null;
 let currentPlayerId = null;
 let unsubscribe;
 let timerInterval;
 
+// --- Fonksiyonlar ---
 
 function showScreen(screenId) {
     screens.forEach(screen => {
@@ -45,13 +52,13 @@ function showScreen(screenId) {
 }
 
 function formatTime(seconds) {
-    if (seconds === 0) return "	Unlimited";
+    if (seconds === 0) return "Unlimited";
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-createSessionBtn.addEventListener('click', async () => {
+async function createNewSession() {
     const theme = themeInput.value.trim();
     const duration = parseInt(timeSelect.value);
 
@@ -65,7 +72,7 @@ createSessionBtn.addEventListener('click', async () => {
             theme: theme,
             duration: duration,
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'waiting', // waiting, in-progress, finished
+            status: 'waiting',
             players: {
                 p1: { uploaded: false, ready: false, imageUrl: '' },
                 p2: { uploaded: false, ready: false, imageUrl: '' }
@@ -87,14 +94,14 @@ createSessionBtn.addEventListener('click', async () => {
         console.error("Error while creating room:", error);
         alert("The room could not be created. Please try again.");
     }
-});
+}
 
-copyLinkBtn.addEventListener('click', () => {
+function copyShareLink() {
     shareLinkInput.select();
     document.execCommand('copy');
     copyLinkBtn.textContent = 'Copied!';
     setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 2000);
-});
+}
 
 function listenToSession() {
     if (unsubscribe) unsubscribe();
@@ -131,12 +138,11 @@ function updateUI(data) {
          db.collection('sessions').doc(currentSessionId).update({ status: 'in-progress' });
     }
     
-    if (data.status === 'in-progress' && gameScreen.style.display !== 'flex') {
+    if (data.status === 'in-progress' && !gameScreen.classList.contains('active')) {
         showScreen('game-screen');
         startTimer(data.duration, data.createdAt);
     }
     
-    const myData = data.players[currentPlayerId];
     const friendId = currentPlayerId === 'p1' ? 'p2' : 'p1';
     const friendData = data.players[friendId];
     
@@ -155,6 +161,7 @@ function startTimer(duration, startTime) {
 
     if (timerInterval) clearInterval(timerInterval);
 
+    // startTime Firestore'dan bir nesne olarak gelir, onu Date nesnesine çevirmeliyiz
     const endTime = startTime.toDate().getTime() + duration * 1000;
 
     timerInterval = setInterval(() => {
@@ -177,32 +184,30 @@ function finishGame() {
     db.collection('sessions').doc(currentSessionId).update({ status: 'finished' });
 }
 
-
 function showResults(data) {
     showScreen('results-screen');
-    const player1 = currentPlayerId === 'p1' ? 'p1' : 'p2';
-    const player2 = currentPlayerId === 'p1' ? 'p2' : 'p1';
+    const player1 = currentPlayerId;
+    const player2 = (currentPlayerId === 'p1' ? 'p2' : 'p1');
 
-    resultImg1.src = data.players[player1].imageUrl || 'https://via.placeholder.com/350?text=Gorsel+Yok';
-    resultImg2.src = data.players[player2].imageUrl || 'https://via.placeholder.com/350?text=Gorsel+Yok';
+    resultImg1.src = data.players[player1].imageUrl || 'https://via.placeholder.com/350?text=No+Image';
+    resultImg2.src = data.players[player2].imageUrl || 'https://via.placeholder.com/350?text=No+Image';
 }
 
-
-p1UploadInput.addEventListener('change', async (e) => {
+async function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
     p1Status.textContent = 'Loading...';
     p1UploadLabel.style.display = 'none';
 
-    const uploadToCloudinary = async (file) => {
+    // Resim yükleme fonksiyonu (uploadToCloudinary) burada tanımlanıyor
+    const uploadToCloudinary = async (fileToUpload) => {
         const CLOUD_NAME = "dpxmx5bsx";
         const UPLOAD_PRESET = "drawst";
-        
         const URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`;
 
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', fileToUpload);
         formData.append('upload_preset', UPLOAD_PRESET);
         
         try {
@@ -210,9 +215,7 @@ p1UploadInput.addEventListener('change', async (e) => {
                 method: 'POST',
                 body: formData,
             });
-            if (!response.ok) {
-                throw new Error('The upload failed.');
-            }
+            if (!response.ok) throw new Error('The upload failed.');
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
@@ -220,8 +223,8 @@ p1UploadInput.addEventListener('change', async (e) => {
             return null;
         }
     };
-});
 
+    // Tanımlanan fonksiyon hemen altında burada çağrılıyor
     const imageUrl = await uploadToCloudinary(file);
 
     if (imageUrl) {
@@ -232,28 +235,28 @@ p1UploadInput.addEventListener('change', async (e) => {
 
         p1Preview.src = imageUrl;
         p1Preview.style.display = 'block';
-        p1Status.textContent = 'Uploaded! Press Done\ when ready..';
+        p1Status.textContent = 'Uploaded! Press Finished when ready.';
         p1ReadyBtn.disabled = false;
     } else {
         p1Status.textContent = 'Upload failed!';
         p1UploadLabel.style.display = 'block';
     }
-});
+}
 
-p1ReadyBtn.addEventListener('click', () => {
+function setPlayerReady() {
     db.collection('sessions').doc(currentSessionId).update({
         [`players.${currentPlayerId}.ready`]: true
     });
     p1ReadyBtn.disabled = true;
-    p1ReadyBtn.textContent = 'Waiting for a Friend...';
-    p1Status.textContent = 'You're ready!';
-});
+    p1ReadyBtn.textContent = 'Waiting for Friend...';
+    p1Status.textContent = "You're ready!";
+}
 
-newGameBtn.addEventListener('click', () => {
+function startNewGame() {
     window.location.href = window.location.origin + window.location.pathname;
-});
+}
 
-window.addEventListener('load', () => {
+function handlePageLoad() {
     const params = new URLSearchParams(window.location.search);
     const sessionId = params.get('session');
 
@@ -262,7 +265,6 @@ window.addEventListener('load', () => {
             if (doc.exists) {
                 currentSessionId = sessionId;
                 currentPlayerId = 'p2';
-                showScreen('game-screen');
                 listenToSession();
             } else {
                 alert("Invalid room link!");
@@ -272,4 +274,12 @@ window.addEventListener('load', () => {
     } else {
         showScreen('setup-screen');
     }
-});
+}
+
+// --- Event Listeners ---
+createSessionBtn.addEventListener('click', createNewSession);
+copyLinkBtn.addEventListener('click', copyShareLink);
+p1UploadInput.addEventListener('change', handleFileUpload);
+p1ReadyBtn.addEventListener('click', setPlayerReady);
+newGameBtn.addEventListener('click', startNewGame);
+window.addEventListener('load', handlePageLoad);
