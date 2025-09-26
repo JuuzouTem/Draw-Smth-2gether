@@ -195,7 +195,7 @@ p1UploadInput.addEventListener('change', async (e) => {
     p1Status.textContent = 'Loading...';
     p1UploadLabel.style.display = 'none';
 
-    const uploadToCloudinary = async (file) => 
+    const uploadToCloudinary = async (file) => {
         const CLOUD_NAME = "dpxmx5bsx";
         const UPLOAD_PRESET = "drawst";
         
