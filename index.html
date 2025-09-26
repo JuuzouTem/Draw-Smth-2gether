@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw with Friend</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <div id="setup-screen" class="screen active">
+            <h1>Draw!</h1>
+            <p>Choose a theme select the duration and spend time with your friend</p>
+            <input type="text" id="theme-input" placeholder="Enter Drawing Theme...">
+            <select id="time-select">
+                <option value="900">15 Min</option>
+                <option value="1800">30 Min</option>
+                <option value="2700">45 Min</option>
+                <option value="0">Unlimited Time</option>
+            </select>
+            <button id="create-session-btn">Create Room</button>
+        </div>
+
+        <div id="waiting-screen" class="screen">
+            <h2>The room is ready!</h2>
+            <p>Share this link with your friend to invite them:</p>
+            <div class="share-link-wrapper">
+                <input type="text" id="share-link" readonly>
+                <button id="copy-link-btn">Copy</button>
+            </div>
+            <p class="waiting-text">Your friend is expected...</p>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <h2 id="game-theme">Theme: </h2>
+                <h3 id="timer">Time: </h3>
+            </div>
+            <div class="players-container">
+                <div class="player-box" id="player1-box">
+                    <h3>Your Drawing</h3>
+                    <div class="upload-wrapper">
+                        <img id="p1-preview" class="image-preview" src="" alt="Your drawing">
+                        <label for="p1-upload-input" class="upload-label">Upload Image</label>
+                        <input type="file" id="p1-upload-input" accept="image/*">
+                    </div>
+                    <button id="p1-ready-btn" class="ready-btn" disabled>Finished</button>
+                    <p id="p1-status" class="status-text">Image waiting...</p>
+                </div>
+                <div class="player-box" id="player2-box">
+                    <h3>Your Friend's Drawing</h3>
+                    <div class="upload-wrapper">
+                         <img id="p2-preview" class="image-preview" src="" alt="Your Friend's drawing">
+                         <div id="p2-placeholder" class="placeholder">?</div>
+                    </div>
+                    <button id="p2-ready-btn" class="ready-btn friend" disabled>Finished</button>
+                    <p id="p2-status" class="status-text">Image waiting...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="results-screen" class="screen">
+            <h1>Sonuçlar!</h1>
+            <h2 id="result-theme">Theme: </h2>
+            <div class="results-container">
+                <div class="result-image-box">
+                    <h4>Your Drawing</h4>
+                    <img id="result-img1" src="" alt="Player 1 Drawing">
+                </div>
+                <div class="result-image-box">
+                    <h4>Your Friend's Drawing</h4>
+                    <img id="result-img2" src="" alt="Player 2 Drawing">
+                </div>
+            </div>
+            <button id="new-game-btn">New Game</button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script src="config.js"></script> 
+    <script src="script.js"></script>
+</body>
+</html>

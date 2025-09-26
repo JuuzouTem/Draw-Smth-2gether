@@ -1,0 +1,223 @@
+:root {
+    --primary-color: #6a11cb;
+    --secondary-color: #2575fc;
+    --background-color: #121212;
+    --surface-color: #1e1e1e;
+    --text-color: #e0e0e0;
+    --text-secondary-color: #a0a0a0;
+    --accent-color: #ff4081;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    background-color: var(--surface-color);
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.screen.active {
+    display: flex;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+h2 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: var(--text-color);
+}
+
+p {
+    font-size: 1rem;
+    color: var(--text-secondary-color);
+    margin-bottom: 25px;
+    max-width: 500px;
+}
+
+input[type="text"], select {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    border: 1px solid #444;
+    background-color: #2a2a2a;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+button {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+button:disabled {
+    background: #555;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.share-link-wrapper {
+    display: flex;
+    width: 100%;
+    max-width: 500px;
+}
+
+.share-link-wrapper input {
+    flex-grow: 1;
+    margin-right: -2px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.share-link-wrapper button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.waiting-text {
+    margin-top: 20px;
+    font-style: italic;
+}
+
+.game-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #444;
+}
+
+.players-container {
+    display: flex;
+    width: 100%;
+    gap: 30px;
+    justify-content: center;
+}
+
+.player-box {
+    flex: 1;
+    background-color: #2a2a2a;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.upload-wrapper {
+    width: 100%;
+    height: 250px;
+    border: 2px dashed #555;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-label {
+    padding: 10px 20px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.image-preview {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
+
+.placeholder {
+    font-size: 5rem;
+    color: #444;
+    user-select: none;
+}
+
+.ready-btn {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.status-text {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--text-secondary-color);
+}
+
+.results-container {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.result-image-box {
+    text-align: center;
+}
+
+.result-image-box img {
+    max-width: 350px;
+    max-height: 350px;
+    border-radius: 12px;
+    border: 2px solid #444;
+    background-color: #2a2a2a;
+}
